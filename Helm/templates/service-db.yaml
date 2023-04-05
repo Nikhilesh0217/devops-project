@@ -1,0 +1,18 @@
+{{- if .Values.service.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "chart.name" . }}-db-svc
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.containerPort }}
+      targetPort: {{ .Values.containerPort }}
+      protocol: TCP
+      name: http
+  selector:
+    type: db
+    {{- include "chart.selectorLabels" . | nindent 4 }}
+{{- end }}

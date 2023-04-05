@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "chart.name" . }}-db-deploy
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  {{- if .Values.strategy }}
+  strategy:
+    {{- toYaml  .Values.strategy | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      type: db
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        type: db
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "chart.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        {{- if .Values.sidecarimage }}
+        - name: "{{ .Values.sidecarimage.name }}"
+          image: "{{ .Values.sidecarimage.repository }}:{{ .Values.sidecarimage.tagname }}"
+          imagePullPolicy: {{ .Values.sidecarimage.pullPolicy }}
+          env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: 100m
+              memory: 250Mi
+            limits:
+              cpu: 100m
+              memory: 250Mi
+          ports:
+          - containerPort: 27017
+          volumeMounts:
+          - name: mongo-persistent-storage
+            mountPath: /data/db
+      volumes:
+      - name: mongo-persistent-storage
+        persistentVolumeClaim:
+          claimName: {{ template "chart.name" . }}-pvc
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
