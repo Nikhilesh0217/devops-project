@@ -10,6 +10,6 @@ helm template Helm
 
 helm upgrade --install devops-practical-app Helm
 
-kubectl expose deployment web --type=NodePort --port=8080
+kubectl expose deployment web --type=NodePort --port=3000
 
 minikube service devops-app-deploy --url
